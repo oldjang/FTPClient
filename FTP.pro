@@ -28,6 +28,8 @@ FORMS += \
 TRANSLATIONS += \
     FTP_zh_CN.ts
 
+LIBS += -lws2_32
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

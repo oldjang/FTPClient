@@ -129,7 +129,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QTextBrowser" name="imformationText"/>
+        <widget class="QTextBrowser" name="informationText"/>
        </item>
       </layout>
      </widget>
