@@ -8,6 +8,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 }
 
+bool MainWindow::controlConnect(){
+    return true;
+}
+
+void MainWindow::on_clicked_connectButton()
+{
+    controlConnect();
+}
+
 MainWindow::~MainWindow()
 {
     delete ui;
