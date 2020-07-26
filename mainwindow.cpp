@@ -176,3 +176,37 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+
+void MainWindow::on_quitButton_clicked()
+{
+     QUITRequest();
+}
+
+/*
+ * 断开连接
+ */
+bool MainWindow::QUITRequest(){
+
+   memset(Sendbuf,0,MAXSIZE);
+   memset(Respond,0,MAXSIZE);
+   memcpy(Sendbuf,"QUIT\r\n",strlen("QUIT\r\n"));
+
+      //返回值< 0 -> 客户端quit请求发送失败
+  if(send(socketControl,Sendbuf,strlen(Sendbuf),0)<0){
+      qDebug("quit ftp request error");
+       exit(0);
+   }
+   ui->informationText->append("quit ftp send success");
+
+    //返回值< 0 -> ftp服务器响应接受失败
+    if(recv(socketControl,Respond,MAXSIZE,0)<0){
+         qDebug("quit ftp receive error");
+    }
+     ui->informationText->append("quit success");
+     ui->informationText->append(Respond);
+    if(QMessageBox::information(NULL,"info","quit ftpserver\r\n success",QMessageBox::Yes)){
+       this->close();
+
+    }
+   return true;
+}
