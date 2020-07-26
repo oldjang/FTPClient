@@ -1,5 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QFile>
+#include <QFileInfo>
+#include <QDateTime>
+#include <QTextStream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -155,6 +159,136 @@ bool MainWindow::portRequest()
    return true;
 }
 
+bool MainWindow::listRequest()
+{
+    memset(Sendbuf,0,sizeof(Sendbuf));
+    memset(Respond,0,sizeof(Respond));
+    struct sockaddr_in clientname;
+    memcpy(Sendbuf,"LIST\r\n",strlen("LIST\r\n"));
+    if(send(socketControl,Sendbuf,strlen(Sendbuf),0)<0) {
+        qDebug("send List Request error");
+        ui->informationText->append("send List Request error");
+    }
+    ui->informationText->append("send List Request success");
+    if(recv(socketControl,Respond,MAXSIZE,0)<0) {
+        qDebug("socket LIST receive error");
+        ui->informationText->append("socket LIST receive error");
+    }
+    ui->informationText->append("socket LIST receive success");
+
+    //请求成功信息
+    int length = sizeof(clientname);
+    if((socketData = accept(socketConnect,(struct sockaddr*)&clientname,(socklen_t*)&length))<0) {
+        qDebug("accept information error");
+        ui->informationText->append("accept information error");
+    }
+    ui->informationText->append("accept information success");
+
+    memset(Respond,0,sizeof(Respond));
+    if(recv(socketData,Respond,MAXSIZE,0)<0) {
+        qDebug("receive list error");
+        exit(0);
+    }
+    ui->downloadFileText->setText(Respond);
+
+    return true;
+}
+
+/*
+ *下载
+ */
+bool MainWindow::retrRequest()
+{
+    memset(Sendbuf,0,sizeof(Sendbuf));
+    memset(Respond,0,sizeof(Respond));
+    struct sockaddr_in clientname;
+    if(ui->downloadFilenamText->text() != NULL) {
+
+        //PORT Request
+        memset(Sendbuf,0,sizeof(Sendbuf));
+        memcpy(Sendbuf, "PORT 127,0,0,1,20,80\r\n", strlen("PORT 127,0,0,1,20,80\r\n"));
+
+        if(send(socketControl, Sendbuf, strlen(Sendbuf),0)<0) {
+            qDebug("PORT Request Error");
+            ui->informationText->append("PORT Request Error");
+            exit(0);
+        }
+        ui->informationText->append(Sendbuf);
+        memset(Respond, 0, sizeof(Respond));
+        if(recv(socketControl, Respond, MAXSIZE, 0) < 0) {
+            qDebug("receive poertmessage error");
+            exit(0);
+        }
+        ui->informationText->append(Respond);
+        ui->informationText->append("-----------------------------------");
+
+
+        //TYPE
+        memset(Sendbuf, 0, sizeof(Sendbuf));
+        memset(Respond, 0, sizeof(Respond));
+        memcpy(Sendbuf, "TYPE I\r\n", strlen("TYPE I\r\n"));
+        if(send(socketControl, Sendbuf, strlen(Sendbuf),0) < 0) {
+            qDebug("send List Request error");
+            ui->informationText->append("send TYPE Request error");
+        }
+        ui->informationText->append("send TYPE Request success");
+        if(recv(socketControl, Respond, MAXSIZE, 0) < 0) {
+            qDebug("socket LIST receive error");
+            ui->informationText->append("socket LIST receive error");
+        }
+        ui->informationText->append(Respond);
+
+
+        //RETR
+        memcpy(Sendbuf, "RETR ", strlen("RETR "));
+        memcpy(Sendbuf+strlen("RETR "), ui->downloadFilenamText->text().toStdString().data(),strlen(ui->downloadFilenamText->text().toStdString().data()));
+        memcpy(Sendbuf+strlen("RETR ")+strlen(ui->downloadFilenamText->text().toStdString().data()), "\r\n",2);
+        if(send(socketControl, Sendbuf, strlen(Sendbuf),0) < 0) {
+            qDebug("send retr Request error");
+            exit(0);
+        }
+        ui->informationText->append(Sendbuf);
+        ui->informationText->append("send RETR Request success");
+        if(recv(socketControl, Respond, MAXSIZE, 0) < 0) {
+            qDebug("socket LIST receive error");
+            ui->informationText->append("socket RETR receive error");
+        }
+        ui->informationText->append(Respond);
+        int length = sizeof(clientname);
+        if((socketData = accept(socketConnect,(struct sockaddr*)&clientname,(socklen_t*)&length)) < 0) {
+            qDebug("accept information error");
+            ui->informationText->append("accept information error");
+        }
+
+        char src[256];
+        QFile file("D:/file/"+ui->downloadFilenamText->text());
+
+        memset(src, 0, sizeof(src));
+        if( file.open(QFile::WriteOnly)) {
+            while(recv(socketData, src, 256, 0) > 0) {
+                QTextStream stream( &file );
+                stream <<QObject::tr(src);
+                memset(src, 0, sizeof(src));
+            }
+        }
+
+        file.close();
+        QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
+
+    }
+    else {
+        QMessageBox::warning(NULL, "error", "请输入文件名",QMessageBox::Yes);
+    }
+    return true;
+}
+
+void MainWindow::on_listButton_clicked()
+{
+    portRequest();
+    ui->informationText->append("---------------------------");
+    listRequest();
+}
+
 
 void MainWindow::on_connectButton_clicked()
 {
@@ -176,3 +310,8 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+
+void MainWindow::on_downloadButton_clicked()
+{
+    retrRequest();
+}

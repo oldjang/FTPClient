@@ -29,6 +29,10 @@ private slots:
     void on_connectButton_clicked();
     void on_loginButton_clicked();
 
+    void on_listButton_clicked();
+
+    void on_downloadButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -50,5 +54,7 @@ private:
     bool FTPLogin();//登录
     bool dataConnect();//数据连接
     bool portRequest();
+    bool listRequest();
+    bool retrRequest();
 };
 #endif // MAINWINDOW_H
