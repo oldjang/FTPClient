@@ -13,6 +13,8 @@
 #define p1 20
 #define p2 80
 
+#pragma comment(lib,"Ws2_32.lib ")
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -28,6 +30,12 @@ public:
 private slots:
     void on_connectButton_clicked();
     void on_loginButton_clicked();
+
+    void on_listButton_clicked();
+
+    void on_fileChooseButton_clicked();
+
+    void on_uploadButton_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -50,5 +58,9 @@ private:
     bool FTPLogin();//登录
     bool dataConnect();//数据连接
     bool portRequest();
+    int sendcmd_re(char*,char*,SSIZE_T*);//  发送命令
+    int sendcmd(char*);//  发送命令
+    int ftp_upload(char*);
+    int ftp_transtype(char);
 };
 #endif // MAINWINDOW_H
