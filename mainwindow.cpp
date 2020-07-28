@@ -245,6 +245,17 @@ int MainWindow::ftp_upload(char *srcPath)
     int count;
     struct sockaddr_in their_addr;
     FILE *fd;
+    char *name;
+
+    QFileInfo fileinfo(srcPath);
+    if(!fileinfo.isFile())//判断文件路径是否 正确
+    {
+        ui->informationText->append("the path is error");
+        //报错
+        return -1;
+    }
+    QByteArray ba=fileinfo.fileName().toLocal8Bit();
+    name=ba.data();
 
     fd=fopen(srcPath,"rb");
     if(fd==NULL)
@@ -261,13 +272,9 @@ int MainWindow::ftp_upload(char *srcPath)
     ftp_transtype('I');
     ui->informationText->append("TYPE I changed");
     memset(buf,0,sizeof(buf));
-    sprintf(buf,"STOR %s\r\n",srcPath);
+    sprintf(buf,"STOR %s\r\n",name);
     send_res=sendcmd(buf);
-    if(send_res!=0)
-    {
-        ui->informationText->append("STOR error");
-        return -1;
-    }
+
     if(!dataConnect())
     {
         ui->informationText->append("bind error");
@@ -312,13 +319,7 @@ void MainWindow::on_uploadButton_clicked()
      QString srcPath=ui->downloadFileText->text();
      QByteArray ba=srcPath.toLocal8Bit();
      path=ba.data();
-     QFileInfo fileinfo(srcPath);
-     if(!fileinfo.isFile())//判断文件路径是否 正确
-     {
-         ui->informationText->append("the path is error");
-         //报错
-         return;
-     }
+
      if(ftp_upload(path)==0)
      {
          ui->informationText->append("upload complete");
