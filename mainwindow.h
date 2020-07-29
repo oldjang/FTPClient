@@ -8,6 +8,7 @@
 #include <string.h>
 #include <QtWidgets/QMessageBox>
 
+
 #define MAXSIZE 1024
 #define CONNECTPORT 21
 #define p1 20
@@ -28,6 +29,8 @@ public:
 private slots:
     void on_connectButton_clicked();
     void on_loginButton_clicked();
+
+    void on_quitButton_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -50,5 +53,6 @@ private:
     bool FTPLogin();//登录
     bool dataConnect();//数据连接
     bool portRequest();
+    bool QUITRequest();
 };
 #endif // MAINWINDOW_H
