@@ -156,33 +156,6 @@ bool MainWindow::portRequest()
 }
 
 
-void MainWindow::on_connectButton_clicked()
-{
-    controlConnect();
-}
-
-void MainWindow::on_loginButton_clicked()
-{
-    FTPLogin();
-    ui->informationText->append("---------------------------");
-    dataConnect();
-    portRequest();
-    QMessageBox::information(NULL, "login", "login success\r\nmodal:主动模式(PORT)", QMessageBox::Yes);
-
-}
-
-
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
-
-
-void MainWindow::on_quitButton_clicked()
-{
-     QUITRequest();
-}
-
 /*
  * 断开连接
  */
@@ -211,3 +184,34 @@ bool MainWindow::QUITRequest(){
     }
    return true;
 }
+
+
+
+void MainWindow::on_connectButton_clicked()
+{
+    controlConnect();
+}
+
+void MainWindow::on_loginButton_clicked()
+{
+    FTPLogin();
+    ui->informationText->append("---------------------------");
+    dataConnect();
+    portRequest();
+    QMessageBox::information(NULL, "login", "login success\r\nmodal:主动模式(PORT)", QMessageBox::Yes);
+
+}
+
+void MainWindow::on_quitButton_clicked()
+{
+     QUITRequest();
+}
+
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+
+
