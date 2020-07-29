@@ -112,7 +112,7 @@ bool MainWindow::dataConnect(){
 
     dataAddr.sin_family=AF_INET;
     dataAddr.sin_port = htons(p1*256+p2);
-    dataAddr.sin_addr.s_addr=inet_addr(addrMessage.toStdString().data());
+    dataAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
 
     //bind
     if(bind(socketConnect,(struct sockaddr*)&dataAddr,sizeof(dataAddr)) == SOCKET_ERROR){
@@ -170,6 +170,7 @@ void MainWindow::on_loginButton_clicked()
     QMessageBox::information(NULL, "login", "login success\r\nmodal:主动模式(PORT)", QMessageBox::Yes);
 
 }
+
 
 MainWindow::~MainWindow()
 {
