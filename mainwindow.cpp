@@ -117,8 +117,10 @@ bool MainWindow::dataConnect(){
 
     dataAddr.sin_family=AF_INET;
     dataAddr.sin_port = htons(p1*256+p2);
-    dataAddr.sin_addr.s_addr=inet_addr(addrMessage.toStdString().data());
-
+    //dataAddr.sin_addr.s_addr=inet_addr(addrMessage.toStdString().data());
+    if(inet_pton(AF_INET,addrMessage.toStdString().data(),&dataAddr.sin_addr)<=0){
+                qDebug("inet_pton error");
+    }
     //bind
     if(bind(socketConnect,(struct sockaddr*)&dataAddr,sizeof(dataAddr)) == SOCKET_ERROR){
         qDebug("bind error");
@@ -272,30 +274,30 @@ int MainWindow::ftp_upload(char *srcPath)
     ftp_transtype('I');
     ui->informationText->append("TYPE I changed");
     memset(buf,0,sizeof(buf));
+    sprintf(buf,"PORT 127,0,0,1,20,80\r\n");
+    send_res=sendcmd(buf);
     sprintf(buf,"STOR %s\r\n",name);
     send_res=sendcmd(buf);
-
-    if(!dataConnect())
-    {
-        ui->informationText->append("bind error");
-        return -1;
-    }
     int sin_size=sizeof(struct sockaddr_in);
-    if(socketData=accept(socketConnect,(struct sockaddr *)&their_addr,&sin_size)==INVALID_SOCKET)
+    if((socketData=accept(socketConnect,(struct sockaddr *)&their_addr,&sin_size))==INVALID_SOCKET)
     {
         ui->informationText->append("dataConnect error");
-        closesocket(socketConnect);
         return -1;
     }
     memset(buf,0,sizeof(buf));
-    while(true)
+    count=fread(buf,sizeof(char),MAXSIZE,fd);
+    send(socketData,buf,count,0);
+    while(send(socketData,buf,count,0)>0)
     {
+        ui->informationText->append("upload");
+
         count=fread(buf,sizeof(char),MAXSIZE,fd);
-        send(socketData,buf,count,0);
         if(count<MAXSIZE)
             break;
     }
     fclose(fd);
+    closesocket(socketData);
+//    closesocket(socketConnect);
     return 0;
 }
 
