@@ -6,6 +6,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ftpBasic.getInformationText(ui->informationText);
 }
 
 /*
@@ -26,30 +27,25 @@ bool MainWindow::controlConnect(){
     serverAddr.sin_addr.s_addr=inet_addr(addrMessage.toStdString().data());
 
     if(inet_addr(addrMessage.toStdString().data())==INADDR_NONE){
-            //测试ip地址是否正确
-            ui->informationText->append("inet_pton error");
-            qDebug("inet_pton error");
-            return false;
-        }
+        //测试ip地址是否正确
+        ui->informationText->append("inet_pton error");
+        qDebug("inet_pton error");
+        return false;
+    }
 
     ui->informationText->append("connect to server...");
 
     if(::connect(socketControl,(SOCKADDR*)&serverAddr,sizeof(SOCKADDR)) == SOCKET_ERROR){
-            //连接服务器
-            qDebug("connect error: ");
-            ui->informationText->append(&"connect error: "[errno]);
-            return false;
-        }
+        //连接服务器
+        qDebug("connect error: ");
+        ui->informationText->append(&"connect error: "[errno]);
+        return false;
+    }
     ui->informationText->append("connect success");
 
-    if(recv(socketControl,Respond,MAXSIZE,0) == SOCKET_ERROR){
-        qDebug("receive error");
-        ui->informationText->append("receive error");
-        exit(0);
-    }
-    ui->informationText->append("receive success");
-    ui->informationText->append(Respond);
-    ui->informationText->append("--------------------------");
+    if(!ftpBasic.readResponse(socketControl))
+        return false;
+
     QMessageBox::information(NULL,"info","contorlConnect to ftpserver\r\n success",QMessageBox::Yes);
 
     return true;
@@ -63,96 +59,59 @@ bool MainWindow::FTPLogin()
 {
     usernameMessage = ui->usernameText->text();
     passwordMessage = ui->passwordText->text();
-    memset(&Sendbuf,0,sizeof(Sendbuf));
-    memset(&Respond,0,sizeof(Respond));
-    memcpy(Sendbuf,"USER ",strlen("USER "));
-    memcpy(Sendbuf+strlen("USER "),usernameMessage.toStdString().data(),strlen(usernameMessage.toStdString().data()));
-    memcpy(Sendbuf+strlen("USER ")+strlen(usernameMessage.toStdString().data()),"\r\n",2);
-    if(send(socketControl,Sendbuf,strlen(Sendbuf),0) == SOCKET_ERROR){
-        qDebug("socket username send error");
-        ui->informationText->append(&"socket username send error "[errno]);
+
+    if(ftpBasic.sendCMD(socketControl,"USER "+usernameMessage+"\r\n"))
+        ui->informationText->append("socket username send success");
+    else{
+        ui->informationText->append("socket username send error ");
+        return false;
+    }
+    if(!ftpBasic.readResponse(socketControl)){
+        qDebug("socket username receive error");
+        ui->informationText->append("socket username receive error");
         return false;
     }
 
-    ui->informationText->append("socket username send success");
-    if(recv(socketControl,Respond,MAXSIZE,0) == SOCKET_ERROR){
-        qDebug("socket username receive error");
-        ui->informationText->append("socket username receive error");
-    }
-    ui->informationText->append(Respond);
-
     ui->informationText->append("password login...");
-    memset(&Sendbuf,0,sizeof(Sendbuf));
-    memset(&Respond,0,sizeof(Respond));
-    memcpy(Sendbuf,"PASS ",strlen("PASS "));
-    memcpy(Sendbuf+strlen("PASS "),passwordMessage.toStdString().data(),strlen(passwordMessage.toStdString().data()));
-    memcpy(Sendbuf+strlen("PASS ")+strlen(passwordMessage.toStdString().data()),"\r\n",2);
-    if(send(socketControl,Sendbuf,strlen(Sendbuf),0)<0){
-        qDebug("socket password send error");
-         ui->informationText->append("socket password send error");
+    if(ftpBasic.sendCMD(socketControl,"PASS "+passwordMessage+"\r\n"))
+        ui->informationText->append("socket password send success ");
+    else{
+        ui->informationText->append("socket password send error ");
+        return false;
     }
-    ui->informationText->append("socket password send success ");
-    if(recv(socketControl,Respond,MAXSIZE,0)<0){
+    if(!ftpBasic.readResponse(socketControl)){
         qDebug("socket password receive error");
-        ui->informationText->append("socket password receive error");
+        ui->informationText->append("socket passworde receive error");
+        return false;
     }
-    ui->informationText->append(Respond);
 
     return true;
 }
 
 /*
- * 数据连接
+ * 发送端口
  */
-
-bool MainWindow::dataConnect(){
-    socketConnect = socket(AF_INET,SOCK_STREAM,0);
-
-    socketData = socket(AF_INET,SOCK_STREAM,0);
-
-    dataAddr.sin_family=AF_INET;
-    dataAddr.sin_port = htons(p1*256+p2);
-    dataAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
-
-    //bind
-    if(bind(socketConnect,(struct sockaddr*)&dataAddr,sizeof(dataAddr)) == SOCKET_ERROR){
-        qDebug("bind error");
-        ui->informationText->append("bind error");
-        return false;
-    }
-    ui->informationText->append("bind client dataAddr success");
-    if(listen(socketConnect,3) < 0){
-        qDebug("listen error");
-        ui->informationText->append("listen error");
-        return false;
-    }
-    return true;
-}
 
 
 bool MainWindow::portRequest()
 {
     ui->informationText->append("PORT....");
 
-   //PORT Request
-   memset(Sendbuf,0,sizeof(Sendbuf));
-   memcpy(Sendbuf,"PORT 127,0,0,1,20,80\r\n",strlen("PORT 127,0,0,1,20,80\r\n"));
+    //PORT Request
+    if(!ftpBasic.sendCMD(socketControl,"PORT 127,0,0,1,20,80\r\n"))
+    {
+        qDebug("PORT Request Error");
+        ui->informationText->append("PORT Request Error");
+        return false;
+    }
 
-   if(send(socketControl,Sendbuf,strlen(Sendbuf),0)<0){
-       qDebug("PORT Request Error");
-       ui->informationText->append("PORT Request Error");
-       return true;
-   }
-   ui->informationText->append(Sendbuf);
-   memset(&Sendbuf,0,sizeof(Sendbuf));
-   memset(&Respond,0,sizeof(Respond));
-   if(recv(socketControl,Respond,MAXSIZE,0) == SOCKET_ERROR){
-       qDebug("receive portmessage error");
-       ui->informationText->append("receive portmessage error");
-       return false;
-   }
-   ui->informationText->append(Respond);
-   return true;
+    if(!ftpBasic.readResponse(socketControl))
+    {
+        qDebug("receive portmessage error");
+        ui->informationText->append("receive portmessage error");
+        return false;
+    }
+    return true;
 }
 
 
@@ -161,28 +120,26 @@ bool MainWindow::portRequest()
  */
 bool MainWindow::QUITRequest(){
 
-   memset(Sendbuf,0,MAXSIZE);
-   memset(Respond,0,MAXSIZE);
-   memcpy(Sendbuf,"QUIT\r\n",strlen("QUIT\r\n"));
-
-      //返回值< 0 -> 客户端quit请求发送失败
-  if(send(socketControl,Sendbuf,strlen(Sendbuf),0)<0){
-      qDebug("quit ftp request error");
-       exit(0);
-   }
-   ui->informationText->append("quit ftp send success");
+    if(!ftpBasic.sendCMD(socketControl,"QUIT\r\n"))
+    {
+        qDebug("quit ftp request error");
+        ui->informationText->append("quit ftp request error");
+        return false;
+    }
+    ui->informationText->append("quit ftp send success");
 
     //返回值< 0 -> ftp服务器响应接受失败
-    if(recv(socketControl,Respond,MAXSIZE,0)<0){
-         qDebug("quit ftp receive error");
+    if(!ftpBasic.readResponse(socketControl)){
+        qDebug("quit ftp receive error");
+        ui->informationText->append("quit ftp receive error");
+        return false;
     }
-     ui->informationText->append("quit success");
-     ui->informationText->append(Respond);
+    ui->informationText->append("quit success");
     if(QMessageBox::information(NULL,"info","quit ftpserver\r\n success",QMessageBox::Yes)){
-       this->close();
+        this->close();
 
     }
-   return true;
+    return true;
 }
 
 
@@ -196,7 +153,6 @@ void MainWindow::on_loginButton_clicked()
 {
     FTPLogin();
     ui->informationText->append("---------------------------");
-    dataConnect();
     portRequest();
     QMessageBox::information(NULL, "login", "login success\r\nmodal:主动模式(PORT)", QMessageBox::Yes);
 
@@ -204,7 +160,7 @@ void MainWindow::on_loginButton_clicked()
 
 void MainWindow::on_quitButton_clicked()
 {
-     QUITRequest();
+    QUITRequest();
 }
 
 

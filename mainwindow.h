@@ -7,6 +7,7 @@
 #include <ws2tcpip.h>
 #include <string.h>
 #include <QtWidgets/QMessageBox>
+#include <QTextBrowser>
 
 
 #define MAXSIZE 1024
@@ -17,6 +18,22 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+class FTPBasic
+{
+public:
+    FTPBasic();
+    bool readResponse(SOCKET fd);
+    bool sendCMD(SOCKET fd,QString sendData);
+    SOCKET createSocket();
+    void getInformationText(QTextBrowser* InformationText);
+
+private:
+    char sendBuf[MAXSIZE];
+    char responseBuf[MAXSIZE];
+    QTextBrowser* informationText;
+
+};
 
 class MainWindow : public QMainWindow
 {
@@ -35,13 +52,13 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
+    FTPBasic ftpBasic;
+
     QString infoMessage;//信息
     QString addrMessage;//地址
     QString usernameMessage;//用户名
     QString passwordMessage;//密码
 
-    SOCKET socketData;//数据传输socket
-    SOCKET socketConnect;//连接socket
     SOCKET socketControl;//控制传输socket
     struct sockaddr_in serverAddr;//服务器地址
     struct sockaddr_in dataAddr;//数据地址
@@ -51,7 +68,6 @@ private:
 
     bool controlConnect();//控制连接
     bool FTPLogin();//登录
-    bool dataConnect();//数据连接
     bool portRequest();
     bool QUITRequest();
 };
