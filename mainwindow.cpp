@@ -116,7 +116,7 @@ bool MainWindow::dataConnect(){
 
     dataAddr.sin_family=AF_INET;
     dataAddr.sin_port = htons(p1*256+p2);
-    dataAddr.sin_addr.s_addr=inet_addr(addrMessage.toStdString().data());
+    dataAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
 
     //bind
     if(bind(socketConnect,(struct sockaddr*)&dataAddr,sizeof(dataAddr)) == SOCKET_ERROR){
@@ -191,6 +191,8 @@ bool MainWindow::listRequest()
     }
     ui->downloadFileText->setText(Respond);
 
+    closesocket(socketData);
+
     return true;
 }
 
@@ -221,8 +223,6 @@ bool MainWindow::retrRequest()
         }
         ui->informationText->append(Respond);
         ui->informationText->append("-----------------------------------");
-
-
         //TYPE
         memset(Sendbuf, 0, sizeof(Sendbuf));
         memset(Respond, 0, sizeof(Respond));
@@ -255,13 +255,15 @@ bool MainWindow::retrRequest()
         }
         ui->informationText->append(Respond);
         int length = sizeof(clientname);
-        if((socketData = accept(socketConnect,(struct sockaddr*)&clientname,(socklen_t*)&length)) < 0) {
+        SOCKET socketData = accept(socketConnect,(struct sockaddr*)&clientname,&length);
+        qDebug("OK3");
+        if( socketData == INVALID_SOCKET) {
             qDebug("accept information error");
             ui->informationText->append("accept information error");
         }
 
         char src[256];
-        QFile file("D:/file/"+ui->downloadFilenamText->text());
+        QFile file("E:/file/"+ui->downloadFilenamText->text());
 
         memset(src, 0, sizeof(src));
         if( file.open(QFile::WriteOnly)) {
