@@ -1,5 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QTextCodec>
+#include <QFileDialog>
+
+#pragma execution_character_set(“utf-8”)
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -248,6 +252,58 @@ bool MainWindow::download()
     return true;
 }
 
+bool MainWindow::upload(char *srcPath)
+{
+    char buf[MAXSIZE];
+    int result;
+    int send_res;
+    int count;
+    struct sockaddr_in their_addr;
+    FILE *fd;
+    char *name;
+
+    QFileInfo fileinfo(srcPath);
+    if(!fileinfo.isFile())//判断文件路径是否 正确
+    {
+        QMessageBox::warning(NULL, "error", "文件路径错误",QMessageBox::Yes);
+        //报错
+        return false;
+    }
+    QByteArray ba=fileinfo.fileName().toLocal8Bit();
+    name=ba.data();
+
+    fd=fopen(srcPath,"rb");
+    if(fd==NULL)
+    {
+        QMessageBox::warning(NULL, "error", "无法访问文件",QMessageBox::Yes);
+        return false;
+    }
+    turnToPasvMode();
+    if(!ftpBasic.sendCMD(socketControl,"STOR "+fileinfo.fileName()+"\r\n")) {
+        ui->informationText->append("send stor Request error");
+        return false;
+    }
+    ui->informationText->append("send STOR Request success");
+    if(!ftpBasic.readResponse(socketControl)) {
+        ui->informationText->append("socket STOR receive error");
+        return false;
+    }
+    ui->informationText->append(Respond);
+
+    memset(buf,0,sizeof(buf));
+
+    while(true)
+    {
+        count=fread(buf,sizeof(char),256,fd);
+        send(socketData,buf,count,0);
+        if(count<256)
+            break;
+    }
+    fclose(fd);
+    closesocket(socketData);
+    return true;
+}
+
 void MainWindow::showClick(QModelIndex index)
 {
     QString strTemp;
@@ -298,3 +354,23 @@ MainWindow::~MainWindow()
 
 
 
+
+void MainWindow::on_fileChooseButton_clicked()
+{
+    QString srcPath=ui->downloadFileText->text();
+    ui->downloadFileText->setText(QFileDialog::getOpenFileName(this,srcPath));
+}
+
+void MainWindow::on_uploadButton_clicked()
+{
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("GBK"));
+    char *path;
+    QString srcPath=ui->downloadFileText->text();
+    QByteArray ba=srcPath.toLocal8Bit();
+    path=ba.data();
+
+    if(upload(path)==true)
+    {
+        ui->informationText->append("upload complete");
+    }
+}

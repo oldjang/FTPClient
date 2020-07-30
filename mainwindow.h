@@ -63,6 +63,10 @@ private slots:
     void on_downloadButton_clicked();
     void showClick(QModelIndex index);
 
+    void on_fileChooseButton_clicked();
+
+    void on_uploadButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -88,6 +92,7 @@ private:
     bool list();//获取文件列表
     bool QUITRequest();//退出
     bool download();//下载
+    bool upload(char*);//上传
 
     QStringListModel *Model;
     QStandardItemModel *ItemModel;
