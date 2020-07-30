@@ -19,6 +19,7 @@
 #include <iostream>
 #include <QDebug>
 #include <string>
+#include <QListWidgetItem>
 
 
 #define MAXSIZE 1024
@@ -61,7 +62,6 @@ private slots:
     void on_listButton_clicked();
     void on_quitButton_clicked();
     void on_downloadButton_clicked();
-    void showClick(QModelIndex index);
 
 private:
     Ui::MainWindow *ui;
@@ -88,8 +88,5 @@ private:
     bool list();//获取文件列表
     bool QUITRequest();//退出
     bool download();//下载
-
-    QStringListModel *Model;
-    QStandardItemModel *ItemModel;
 };
 #endif // MAINWINDOW_H

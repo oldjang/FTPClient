@@ -137,20 +137,21 @@ bool MainWindow::list()
         tmp.append(data_buf);
     }
 
-    QStringList strList=tmp.split('\n');
-    int nCount = strList.size();
-    ItemModel = new QStandardItemModel(this);
+    ui->fileList->setText(tmp);
 
-    for(int i = 0; i < nCount; i++)
-    {
-        QString string = static_cast<QString>(strList.at(i));
-        QStandardItem *item = new QStandardItem(string);
-        ItemModel->appendRow(item);
-    }
-    ui->fileList->setModel(ItemModel);
-    ui->fileList->adjustSize();
-    connect(ui->fileList,SIGNAL(clicked(QModelIndex)),this,SLOT(showClick(QModelIndex)));
+//    QStringList strList=tmp.split('\n');
 
+//    int count=strList.length();
+//    qDebug("OK1");
+//    for(int index=0;index<count;index++)
+//    {
+//        QListWidgetItem *item = new QListWidgetItem;
+//        item->setText(strList[index]);
+//        qDebug("%d %s",index,strList[index].toStdString().data());
+//        ui->fileList->addItem(item);
+//    }
+//    ui->fileList->adjustSize();
+    //delete Model;
 
     closesocket(socketData);
 
@@ -191,19 +192,6 @@ bool MainWindow::download()
 
         turnToPasvMode();
 
-//        //TYPE
-//        if(!ftpBasic.sendCMD(socketControl,"TYPE I\r\n")) {
-//            qDebug("send TYPE Request error");
-//            ui->informationText->append("send TYPE Request error");
-//            return false;
-//        }
-//        ui->informationText->append("send TYPE Request success");
-//        if(!ftpBasic.readResponse(socketControl)) {
-//            qDebug("socket TYPE receive error");
-//            ui->informationText->append("socket TYPE receive error");
-//            return false;
-//        }
-
         //RETR
         if(!ftpBasic.sendCMD(socketControl,"RETR "+ui->downloadFilenamText->text()+"\r\n")) {
             ui->informationText->append("send retr Request error");
@@ -222,24 +210,14 @@ bool MainWindow::download()
 
         std::string filename=("E:\\file\\"+ui->downloadFilenamText->text()).toStdString();
 
+        FILE *fd=fopen(filename.data(),"wb");
 
-        std::ofstream file(filename.c_str(), std::ios::binary);
-
-        if(file.good())
-                   qDebug("good");
-                else
-                   qDebug("bad");
-
-        memset(src, 0, sizeof(src));
         int cnt;
-        while((cnt = recv(socketData, src, 256, 0)) > 0)
-        {
-            qDebug("%d",cnt);
-            file.write(src,cnt);
-            memset(src, 0, sizeof(src));
-        }
+        while ((cnt = recv(socketData, src, 256, 0)) > 0)
+            fwrite(src, sizeof(char), 256, fd);
         QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
-        file.close();
+        closesocket(socketData);
+        //file.close();
 
     }
     else {
@@ -248,18 +226,6 @@ bool MainWindow::download()
     return true;
 }
 
-void MainWindow::showClick(QModelIndex index)
-{
-    QString strTemp;
-    strTemp = index.data().toString();
-
-    QStringList listTemp=strTemp.split(' ');
-
-    QString fileName=listTemp[listTemp.size()-1];
-
-    if(fileName!=".."&&strTemp[0]!='d')
-        ui->downloadFilenamText->setText(fileName);
-}
 
 
 
@@ -290,6 +256,7 @@ void MainWindow::on_downloadButton_clicked()
 {
     download();
 }
+
 
 MainWindow::~MainWindow()
 {
