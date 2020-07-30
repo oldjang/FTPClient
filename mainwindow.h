@@ -62,6 +62,8 @@ private slots:
     void on_listButton_clicked();
     void on_quitButton_clicked();
     void on_downloadButton_clicked();
+    void on_fileChooseButton_clicked();
+    void on_uploadButton_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -88,5 +90,7 @@ private:
     bool list();//获取文件列表
     bool QUITRequest();//退出
     bool download();//下载
+    bool upload(char *srcPath);
+
 };
 #endif // MAINWINDOW_H
