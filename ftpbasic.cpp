@@ -4,7 +4,7 @@ FTPBasic::FTPBasic()
 {
 
 }
-bool FTPBasic::readResponse(SOCKET fd)
+bool FTPBasic::readResponse(SOCKET fd,QString * message)
 {
     memset(responseBuf,0,MAXSIZE);
     if(recv(fd,responseBuf,MAXSIZE,0) == SOCKET_ERROR){
@@ -16,6 +16,8 @@ bool FTPBasic::readResponse(SOCKET fd)
     informationText->append("Receive successfully");
     informationText->append(responseBuf);
     informationText->append("--------------------------");
+    if(message!=nullptr)
+        *message=QLatin1String(responseBuf);
     return true;
 }
 
@@ -37,33 +39,32 @@ bool FTPBasic::sendCMD(SOCKET fd,QString sendData)
 }
 
 
-SOCKET FTPBasic::createSocket()
+SOCKET FTPBasic::createSocket(QString addr,int port)
 {
     SOCKET sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    struct sockaddr_in dataAddr;
-    dataAddr.sin_family=AF_INET;
-    dataAddr.sin_port = htons(p1*256+p2);
-    dataAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
-    memset(&(dataAddr.sin_zero), 0, sizeof(dataAddr.sin_zero));
+    struct sockaddr_in Addr;
+    memset(&Addr,0,sizeof(Addr));
+    Addr.sin_family = AF_INET;
+    Addr.sin_port = htons(port);
+    Addr.sin_addr.s_addr=inet_addr(addr.toStdString().data());
 
-    //绑定
-    if (bind(sockfd, (struct sockaddr *)&dataAddr, sizeof(struct sockaddr)) == SOCKET_ERROR)
-    {
-        informationText->append("bind error");
-        closesocket(sockfd);
-        WSACleanup();
+    if(inet_addr(addr.toStdString().data())==INADDR_NONE){
+        //测试ip地址是否正确
+        informationText->append("inet_pton error");
+        qDebug("inet_pton error");
+        return false;
     }
-    int nREUSEADDR = 1;
 
-    setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,(const char*)&nREUSEADDR,sizeof(int));
+    informationText->append("connect to server...");
 
-    //侦听数据连接请求
-    if (listen(sockfd, 3) == SOCKET_ERROR)
-    {
-        informationText->append("listen error");
-        closesocket(sockfd);
-        WSACleanup();
+    if(::connect(sockfd,(SOCKADDR*)&Addr,sizeof(SOCKADDR)) == SOCKET_ERROR){
+        //连接服务器
+        qDebug("connect error: ");
+        informationText->append(&"connect error: "[errno]);
+        return false;
     }
+    informationText->append("connect success");
+
     return sockfd;
 }
 

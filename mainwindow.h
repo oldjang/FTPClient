@@ -35,9 +35,9 @@ class FTPBasic
 {
 public:
     FTPBasic();
-    bool readResponse(SOCKET fd);
+    bool readResponse(SOCKET fd,QString *message=nullptr);
     bool sendCMD(SOCKET fd,QString sendData);
-    SOCKET createSocket();
+    SOCKET createSocket(QString addr,int port);
     void getInformationText(QTextBrowser* InformationText);
 
 private:
@@ -74,6 +74,7 @@ private:
     QString passwordMessage;//密码
 
     SOCKET socketControl;//控制传输socket
+    SOCKET socketData;
     SOCKET socketconnect;
     struct sockaddr_in serverAddr;//服务器地址
     struct sockaddr_in dataAddr;//数据地址
@@ -83,7 +84,7 @@ private:
 
     bool controlConnect();//控制连接
     bool FTPLogin();//登录
-    bool portRequest();//发送port
+    bool turnToPasvMode();//发送port
     bool list();//获取文件列表
     bool QUITRequest();//退出
     bool download();//下载
