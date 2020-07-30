@@ -64,6 +64,8 @@ private slots:
     void on_downloadButton_clicked();
     void on_fileChooseButton_clicked();
     void on_uploadButton_clicked();
+    void on_cdButton_clicked();
+    void on_returnButton_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -74,6 +76,7 @@ private:
     QString addrMessage;//地址
     QString usernameMessage;//用户名
     QString passwordMessage;//密码
+    QString listMessage;
 
     SOCKET socketControl;//控制传输socket
     SOCKET socketData;
@@ -91,6 +94,7 @@ private:
     bool QUITRequest();//退出
     bool download();//下载
     bool upload(char *srcPath);
+    bool cd(QString name);
 
 };
 #endif // MAINWINDOW_H

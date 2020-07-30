@@ -33,6 +33,7 @@ bool FTPBasic::sendCMD(SOCKET fd,QString sendData)
         closesocket(fd);
         return false;
     }
+    qDebug("%s",sendData.toStdString().data());
     informationText->append("Send command successfully");
     informationText->append("--------------------------");
     return true;

@@ -141,6 +141,8 @@ bool MainWindow::list()
         tmp.append(data_buf);
     }
 
+    listMessage = tmp;
+
     ui->fileList->setText(tmp);
 
     closesocket(socketData);
@@ -178,6 +180,12 @@ bool MainWindow::QUITRequest(){
 
 bool MainWindow::download()
 {
+    if(!listMessage.contains(ui->downloadFilenamText->text(),Qt::CaseSensitive))
+    {
+        QMessageBox::warning(NULL, "error", "文件路径错误",QMessageBox::Yes);
+        //报错
+        return false;
+    }
     if(ui->downloadFilenamText->text() != NULL) {
 
         turnToPasvMode();
@@ -266,6 +274,29 @@ bool MainWindow::upload(char *srcPath)
     return true;
 }
 
+bool MainWindow::cd(QString name)
+{
+    if((!listMessage.contains(name,Qt::CaseSensitive))&&(name!=".."))
+    {
+        QMessageBox::warning(NULL, "error", "文件路径错误",QMessageBox::Yes);
+        //报错
+        return false;
+    }
+    if(!ftpBasic.sendCMD(socketControl,"CWD "+name+"\r\n"))
+    {
+        ui->informationText->append("send cd Request error");
+        return false;
+    }
+    ui->informationText->append("send cd Request success");
+
+    if(!ftpBasic.readResponse(socketControl)) {
+        ui->informationText->append("socket cd receive error");
+        return false;
+    }
+
+    list();
+    return true;
+}
 
 
 void MainWindow::on_connectButton_clicked()
@@ -314,6 +345,16 @@ void MainWindow::on_uploadButton_clicked()
     {
         ui->informationText->append("upload complete");
     }
+}
+
+void MainWindow::on_cdButton_clicked()
+{
+    cd(ui->folderText->text());
+}
+
+void MainWindow::on_returnButton_clicked()
+{
+    cd("..");
 }
 
 MainWindow::~MainWindow()
