@@ -139,10 +139,16 @@
       <item>
        <widget class="QWidget" name="downloadWidget" native="true">
         <layout class="QGridLayout" name="gridLayout">
-         <item row="3" column="2">
-          <widget class="QPushButton" name="downloadButton">
+         <item row="0" column="0" colspan="3">
+          <widget class="QLabel" name="downLoadLabel">
            <property name="text">
-            <string>Download</string>
+            <string>&lt;h2&gt;DownLoad&lt;/h2&gt;</string>
+           </property>
+           <property name="textFormat">
+            <enum>Qt::AutoText</enum>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -163,10 +169,10 @@
            </item>
           </layout>
          </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="listLabel">
+         <item row="3" column="2">
+          <widget class="QPushButton" name="downloadButton">
            <property name="text">
-            <string>FileList</string>
+            <string>Download</string>
            </property>
           </widget>
          </item>
@@ -177,21 +183,15 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0" colspan="3">
-          <widget class="QListView" name="fileList"/>
-         </item>
-         <item row="0" column="0" colspan="3">
-          <widget class="QLabel" name="downLoadLabel">
+         <item row="1" column="0">
+          <widget class="QLabel" name="listLabel">
            <property name="text">
-            <string>&lt;h2&gt;DownLoad&lt;/h2&gt;</string>
-           </property>
-           <property name="textFormat">
-            <enum>Qt::AutoText</enum>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <string>FileList</string>
            </property>
           </widget>
+         </item>
+         <item row="2" column="0" colspan="3">
+          <widget class="QTextBrowser" name="fileList"/>
          </item>
         </layout>
        </widget>
