@@ -187,35 +187,13 @@ bool MainWindow::QUITRequest(){
 
 bool MainWindow::download()
 {
-//    if(ui->downloadFilenamText->text() != NULL) {
+    if(ui->downloadFilenamText->text() != NULL) {
 
+        turnToPasvMode();
 
-//        int sin_size;
-//        SOCKET newsockfd, data_sockfd;
-//        struct sockaddr_in their_add;
-
-//        newsockfd = ftpBasic.createSocket();
-
-//        //PORT Request
-//        memset(Sendbuf,0,sizeof(Sendbuf));
-//        memcpy(Sendbuf, "PORT 127,0,0,1,20,80\r\n", strlen("PORT 127,0,0,1,20,80\r\n"));
-
-//        if(send(socketControl, Sendbuf, strlen(Sendbuf),0)<0) {
-//            qDebug("PORT Request Error");
-//            ui->informationText->append("PORT Request Error");
-//            exit(0);
-//        }
-//        ui->informationText->append(Sendbuf);
-//        memset(Respond, 0, sizeof(Respond));
-//        if(recv(socketControl, Respond, MAXSIZE, 0) < 0) {
-//            qDebug("receive poertmessage error");
-//            exit(0);
-//        }
-//        ui->informationText->append(Respond);
-//        ui->informationText->append("-----------------------------------");
 //        //TYPE
 //        if(!ftpBasic.sendCMD(socketControl,"TYPE I\r\n")) {
-//            qDebug("send List Request error");
+//            qDebug("send TYPE Request error");
 //            ui->informationText->append("send TYPE Request error");
 //            return false;
 //        }
@@ -226,69 +204,48 @@ bool MainWindow::download()
 //            return false;
 //        }
 
-//        //RETR
-//        if(!ftpBasic.sendCMD(socketControl,"RETR "+ui->downloadFilenamText->text()+"\r\n")) {
-//            ui->informationText->append("send retr Request error");
-//            return false;
-//        }
-//        ui->informationText->append("send RETR Request success");
+        //RETR
+        if(!ftpBasic.sendCMD(socketControl,"RETR "+ui->downloadFilenamText->text()+"\r\n")) {
+            ui->informationText->append("send retr Request error");
+            return false;
+        }
+        ui->informationText->append("send RETR Request success");
 
-//        if(!ftpBasic.readResponse(socketControl)) {
-//            ui->informationText->append("socket RETR receive error");
-//            return false;
-//        }
-//        ui->informationText->append(Respond);
+        if(!ftpBasic.readResponse(socketControl)) {
+            ui->informationText->append("socket RETR receive error");
+            return false;
+        }
+        ui->informationText->append(Respond);
 
 
+        char src[256];
 
-//        sin_size = sizeof(struct sockaddr_in);
-//        //接受服务器的数据连接请求
-//        if ((data_sockfd = accept(newsockfd, (struct sockaddr*)&their_add, &sin_size)) == INVALID_SOCKET)
-//        {
-//            ui->informationText->append("RETR error");
-//            closesocket(newsockfd);
-//            return false;
-//        }
+        std::string filename=("E:\\file\\"+ui->downloadFilenamText->text()).toStdString();
 
-//        char src[256];
 
-//        std::string filename=("E:\\file\\"+ui->downloadFilenamText->text()).toStdString();
+        std::ofstream file(filename.c_str(), std::ios::binary);
 
-//        qDebug(filename.c_str());
+        if(file.good())
+                   qDebug("good");
+                else
+                   qDebug("bad");
 
-//        std::ofstream file(filename.c_str(), std::ios::binary);
-////        throw std::system_error(errno, std::system_category(), "fail to open")
-//        try
-//        {
-//            throw std::system_error(errno, std::system_category(), "fail to open")
+        memset(src, 0, sizeof(src));
+        int cnt;
+        while((cnt = recv(socketData, src, 256, 0)) > 0)
+        {
+            qDebug("%d",cnt);
+            file.write(src,cnt);
+            memset(src, 0, sizeof(src));
+        }
+        QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
+        file.close();
 
-//        } catch(std::system_error &e)
-//        {
-//            qDebug() << e.what() << ' ' << e.code().value() << ' ' << e.code().message();
-//        }
-//        ;
-//        if(file.good())
-//            qDebug("good");
-//        else
-//            qDebug("bad");
-
-//        memset(src, 0, sizeof(src));
-//        int cnt;
-//        while((cnt = recv(data_sockfd, src, 256, 0)) > 0)
-//        {
-//            qDebug("hhh");
-//            file.write(src,cnt);
-//            qDebug(src);
-//            memset(src, 0, sizeof(src));
-//        }
-//        QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
-//        file.close();
-
-//    }
-//    else {
-//        QMessageBox::warning(NULL, "error", "请输入文件名",QMessageBox::Yes);
-//    }
-//    return true;
+    }
+    else {
+        QMessageBox::warning(NULL, "error", "请输入文件名",QMessageBox::Yes);
+    }
+    return true;
 }
 
 void MainWindow::showClick(QModelIndex index)
