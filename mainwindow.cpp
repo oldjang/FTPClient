@@ -277,21 +277,14 @@ bool MainWindow::download()
 
         std::string filename=(file_path+"/"+ui->downloadFilenamText->text()).toStdString();
 
-        QByteArray s(filename.c_str(),filename.length());
-        QFileInfo fileinfo(s);
 
-        qint64 result=listfile(fileinfo.fileName());
-
-        std::cout<<result;
+        QString fn = QString::fromStdString(filename);
 
 
-        if(result == -1)
-        {
-            QMessageBox::warning(NULL, "error", "文件夹 访问出错",QMessageBox::Yes);
-            return false;
-        }
 
-        else if(result == 0 )
+        QFileInfo fi;
+        fi.setFile(fn);
+        if(fi.isFile() == false )
         {
             turnToPasvMode();
 
@@ -308,11 +301,12 @@ bool MainWindow::download()
             }
             ui->informationText->append(Respond);
 
+
             char src[256];
             wchar_t strUnicode[260];
+            std::string filename=(file_path+"/"+ui->downloadFilenamText->text()).toStdString();
             UTF8ToUnicode(filename.data(), strUnicode);
             FILE *fd=_wfopen(strUnicode,L"wb");
-
             ui->progressBar->reset();
             int cnt;
             qint64 sum=0;
@@ -329,6 +323,9 @@ bool MainWindow::download()
 
         else
         {
+            QByteArray ss(filename.c_str(),filename.length());
+            QFileInfo fileinfo(ss);
+            qint64 result=listfile(fileinfo.fileName());
             QMessageBox *msgbox=new QMessageBox();
             msgbox->setWindowTitle("确认");
             QString s="检测到文件夹已存在同名文件\n本地文件大小为"+QString::number(fileinfo.size())+"\n文件夹段文件大小为"+QString::number(result);;
@@ -355,11 +352,11 @@ bool MainWindow::download()
                 }
                 ui->informationText->append(Respond);
 
+
                 char src[256];
                 wchar_t strUnicode[260];
                 UTF8ToUnicode(filename.data(), strUnicode);
                 FILE *fd=_wfopen(strUnicode,L"wb");
-
                 ui->progressBar->reset();
                 int cnt;
                 qint64 sum=0;
