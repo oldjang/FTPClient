@@ -268,6 +268,13 @@
          <widget class="QWidget" name="widget" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
+            <widget class="QProgressBar" name="progressBar">
+             <property name="value">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QLabel" name="label">
              <property name="text">
               <string>&lt;h5&gt;主动模式FTP客户端&lt;/h5&gt;</string>
@@ -297,7 +304,7 @@
      <x>0</x>
      <y>0</y>
      <width>789</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>

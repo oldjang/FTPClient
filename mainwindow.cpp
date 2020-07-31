@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QTextCodec>
 #include <QFileDialog>
-
+#include <wchar.h>
 #pragma execution_character_set(“utf-8”)
 
 MainWindow::MainWindow(QWidget *parent)
@@ -178,6 +178,27 @@ bool MainWindow::QUITRequest(){
     return true;
 }
 
+bool UTF8ToUnicode(const char* UTF8, wchar_t* strUnicode)
+{
+ DWORD dwUnicodeLen;    //转换后Unicode的长度
+ TCHAR *pwText;      //保存Unicode的指针
+// wchar_t* strUnicode;    //返回值
+ //获得转换后的长度，并分配内存
+ dwUnicodeLen = MultiByteToWideChar(CP_UTF8,0,UTF8,-1,NULL,0);
+ pwText = new TCHAR[dwUnicodeLen];
+ if(!pwText)
+ {
+ return false;
+ }
+ //转为Unicode
+ MultiByteToWideChar(CP_UTF8,0,UTF8,-1,pwText,dwUnicodeLen);
+ //转为CString
+ wcscpy(strUnicode, pwText);
+ //清除内存
+ delete[]pwText;
+ return true;
+}
+
 bool MainWindow::download()
 {
     if(!listMessage.contains(ui->downloadFilenamText->text(),Qt::CaseSensitive))
@@ -205,10 +226,10 @@ bool MainWindow::download()
 
 
         char src[256];
-
-        std::string filename=("E:\\file\\"+ui->downloadFilenamText->text()).toStdString();
-
-        FILE *fd=fopen(filename.data(),"wb");
+        wchar_t strUnicode[260];
+        std::string filename=(QFileDialog::getExistingDirectory(this,tr("Open Directory"))+ui->downloadFilenamText->text()).toStdString();
+        UTF8ToUnicode(filename.data(), strUnicode);
+        FILE *fd=_wfopen(strUnicode,L"wb");
 
         int cnt;
         while ((cnt = recv(socketData, src, 256, 0)) > 0)
@@ -231,8 +252,9 @@ bool MainWindow::upload(char *srcPath)
     int count;
     FILE *fd;
     char *name;
-
-    QFileInfo fileinfo(srcPath);
+    QTextCodec *codec = QTextCodec::codecForName("GB2312");
+    QByteArray  s=srcPath;
+    QFileInfo fileinfo(s);
     if(!fileinfo.isFile())//判断文件路径是否 正确
     {
         QMessageBox::warning(NULL, "error", "文件路径错误",QMessageBox::Yes);
@@ -241,11 +263,15 @@ bool MainWindow::upload(char *srcPath)
     }
     QByteArray ba=fileinfo.fileName().toLocal8Bit();
     name=ba.data();
+    wchar_t strUnicode[260];
+    UTF8ToUnicode(srcPath, strUnicode);
 
-    fd=fopen(srcPath,"rb");
+    fd=_wfopen(strUnicode,L"rb");
     if(fd==NULL)
     {
+
         QMessageBox::warning(NULL, "error", "无法访问文件",QMessageBox::Yes);
+
         return false;
     }
     turnToPasvMode();
@@ -259,13 +285,20 @@ bool MainWindow::upload(char *srcPath)
         return false;
     }
     ui->informationText->append(Respond);
-
+    ui->progressBar->reset();
     memset(buf,0,sizeof(buf));
-
+    qint64 sum=0;
+    qint64 tot=fileinfo.size();
     while(true)
     {
         count=fread(buf,sizeof(char),256,fd);
-        send(socketData,buf,count,0);
+        if(send(socketData,buf,count,0)==SOCKET_ERROR)
+        {
+            QMessageBox::warning(NULL, "error", "数据传输出错",QMessageBox::Yes);
+            break;
+        }
+        sum+=count;
+        ui->progressBar->setValue(sum*100/fileinfo.size());
         if(count<256)
             break;
     }
@@ -335,16 +368,16 @@ void MainWindow::on_fileChooseButton_clicked()
 
 void MainWindow::on_uploadButton_clicked()
 {
-    QTextCodec::setCodecForLocale(QTextCodec::codecForName("GBK"));
     char *path;
     QString srcPath=ui->downloadFileText->text();
-    QByteArray ba=srcPath.toLocal8Bit();
+    QByteArray ba=srcPath.toUtf8();
     path=ba.data();
-
+    ui->informationText->append(path);
     if(upload(path)==true)
     {
         ui->informationText->append("upload complete");
     }
+    ui->progressBar->reset();
 }
 
 void MainWindow::on_cdButton_clicked()
