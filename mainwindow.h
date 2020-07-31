@@ -63,8 +63,8 @@ private slots:
     void on_downloadButton_clicked();
     void on_fileChooseButton_clicked();
     void on_uploadButton_clicked();
-    void on_cdButton_clicked();
-    void on_returnButton_clicked();
+    void showClick(QModelIndex index);
+    void showDoubleClick(QModelIndex index);
 
 private:
     Ui::MainWindow *ui;
@@ -95,6 +95,7 @@ private:
     bool upload(char *srcPath);
     bool cd(QString name);
     qint64 listfile(QString);
+
 
 };
 #endif // MAINWINDOW_H

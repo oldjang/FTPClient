@@ -143,8 +143,14 @@ bool MainWindow::list()
     }
 
     listMessage = tmp;
+    QStringList strList=tmp.split('\n');
 
-    ui->fileList->setText(tmp);
+    ui->fileList->clear();
+    ui->fileList->addItems(strList);
+
+    ui->fileList->setResizeMode(QListView::Adjust);
+    connect(ui->fileList,SIGNAL(clicked(QModelIndex)),this,SLOT(showClick(QModelIndex)));
+    connect(ui->fileList,SIGNAL(doubleClicked(QModelIndex)),this,SLOT(showDoubleClick(QModelIndex)));
 
     closesocket(socketData);
 
@@ -181,23 +187,23 @@ bool MainWindow::QUITRequest(){
 
 bool UTF8ToUnicode(const char* UTF8, wchar_t* strUnicode)
 {
- DWORD dwUnicodeLen;    //转换后Unicode的长度
- TCHAR *pwText;      //保存Unicode的指针
-// wchar_t* strUnicode;    //返回值
- //获得转换后的长度，并分配内存
- dwUnicodeLen = MultiByteToWideChar(CP_UTF8,0,UTF8,-1,NULL,0);
- pwText = new TCHAR[dwUnicodeLen];
- if(!pwText)
- {
- return false;
- }
- //转为Unicode
- MultiByteToWideChar(CP_UTF8,0,UTF8,-1,pwText,dwUnicodeLen);
- //转为CString
- wcscpy(strUnicode, pwText);
- //清除内存
- delete[]pwText;
- return true;
+    DWORD dwUnicodeLen;    //转换后Unicode的长度
+    TCHAR *pwText;      //保存Unicode的指针
+    // wchar_t* strUnicode;    //返回值
+    //获得转换后的长度，并分配内存
+    dwUnicodeLen = MultiByteToWideChar(CP_UTF8,0,UTF8,-1,NULL,0);
+    pwText = new TCHAR[dwUnicodeLen];
+    if(!pwText)
+    {
+        return false;
+    }
+    //转为Unicode
+    MultiByteToWideChar(CP_UTF8,0,UTF8,-1,pwText,dwUnicodeLen);
+    //转为CString
+    wcscpy(strUnicode, pwText);
+    //清除内存
+    delete[]pwText;
+    return true;
 }
 
 qint64 MainWindow::listfile(QString filename)
@@ -545,14 +551,40 @@ void MainWindow::on_uploadButton_clicked()
     ui->progressBar->reset();
 }
 
-void MainWindow::on_cdButton_clicked()
+void MainWindow::showClick(QModelIndex index)
 {
-    cd(ui->folderText->text());
+    QString strTemp;
+    strTemp = index.data().toString();
+
+
+    QStringList listTemp=strTemp.split(' ');
+
+    QString fileName=listTemp[listTemp.size()-1];
+
+    fileName.chop(1);
+
+    if(fileName!=".."&&strTemp[0]!='d')
+        ui->downloadFilenamText->setText(fileName);
 }
 
-void MainWindow::on_returnButton_clicked()
+void MainWindow::showDoubleClick(QModelIndex index)
 {
-    cd("..");
+    QString strTemp;
+
+    strTemp = index.data().toString();
+
+    if(strTemp=="..") cd("..");
+    else{
+
+        QStringList listTemp=strTemp.split(' ');
+
+        QString fileName=listTemp[listTemp.size()-1];
+
+        fileName.chop(1);
+
+        if(strTemp[0] == 'd')
+            cd(fileName);
+    }
 }
 
 MainWindow::~MainWindow()
