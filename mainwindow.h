@@ -94,7 +94,7 @@ private:
     bool download();//下载
     bool upload(char *srcPath);
     bool cd(QString name);
-    qint64 listfile(QFileInfo);
+    qint64 listfile(QString);
 
 };
 #endif // MAINWINDOW_H

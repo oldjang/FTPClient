@@ -200,7 +200,7 @@ bool UTF8ToUnicode(const char* UTF8, wchar_t* strUnicode)
  return true;
 }
 
-qint64 MainWindow::listfile(QFileInfo fileinfo)
+qint64 MainWindow::listfile(QString filename)
 {
     int nRead;
     char data_buf[DATA_BUFSIZE];
@@ -211,7 +211,7 @@ qint64 MainWindow::listfile(QFileInfo fileinfo)
     }
 
     //构建命令报文并发送至服务器
-    if(!ftpBasic.sendCMD(socketControl,"LIST "+fileinfo.fileName()+"\r\n"))
+    if(!ftpBasic.sendCMD(socketControl,"LIST "+filename+"\r\n"))
     {
         ui->informationText->append("list error");
         closesocket(socketData);
@@ -255,6 +255,11 @@ qint64 MainWindow::listfile(QFileInfo fileinfo)
 
 bool MainWindow::download()
 {
+    QString file_path=QFileDialog::getExistingDirectory(this,tr("Open Directory"));
+    if(file_path.isEmpty())
+    {
+        return false;
+    }
     if(!listMessage.contains(ui->downloadFilenamText->text(),Qt::CaseSensitive))
     {
         QMessageBox::warning(NULL, "error", "文件路径错误",QMessageBox::Yes);
@@ -262,6 +267,7 @@ bool MainWindow::download()
         return false;
     }
     if(ui->downloadFilenamText->text() != NULL) {
+        qint64 size=listfile(ui->downloadFilenamText->text());
 
         turnToPasvMode();
 
@@ -281,13 +287,18 @@ bool MainWindow::download()
 
         char src[256];
         wchar_t strUnicode[260];
-        std::string filename=(QFileDialog::getExistingDirectory(this,tr("Open Directory"))+"/"+ui->downloadFilenamText->text()).toStdString();
+        std::string filename=(file_path+"/"+ui->downloadFilenamText->text()).toStdString();
         UTF8ToUnicode(filename.data(), strUnicode);
         FILE *fd=_wfopen(strUnicode,L"wb");
-
+        ui->progressBar->reset();
         int cnt;
+        qint64 sum=0;
         while ((cnt = recv(socketData, src, 256, 0)) > 0)
+        {
             fwrite(src, sizeof(char), 256, fd);
+            sum+=cnt;
+            ui->progressBar->setValue(sum*100/size);
+        }
         QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
         closesocket(socketData);
         //file.close();
@@ -339,7 +350,7 @@ bool MainWindow::upload(char *srcPath)
 
 
 
-    qint64 result=listfile(fileinfo);
+    qint64 result=listfile(fileinfo.fileName());
 
     if(result==-1)    {
         QMessageBox::warning(NULL, "error", "服务器 访问出错",QMessageBox::Yes);
