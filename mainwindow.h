@@ -58,8 +58,6 @@ public:
 
 private slots:
     void on_connectButton_clicked();
-    void on_loginButton_clicked();
-    void on_listButton_clicked();
     void on_quitButton_clicked();
     void on_downloadButton_clicked();
     void on_fileChooseButton_clicked();

@@ -227,7 +227,7 @@ bool MainWindow::download()
 
         char src[256];
         wchar_t strUnicode[260];
-        std::string filename=(QFileDialog::getExistingDirectory(this,tr("Open Directory"))+ui->downloadFilenamText->text()).toStdString();
+        std::string filename=(QFileDialog::getExistingDirectory(this,tr("Open Directory"))+"/"+ui->downloadFilenamText->text()).toStdString();
         UTF8ToUnicode(filename.data(), strUnicode);
         FILE *fd=_wfopen(strUnicode,L"wb");
 
@@ -335,18 +335,9 @@ bool MainWindow::cd(QString name)
 void MainWindow::on_connectButton_clicked()
 {
     controlConnect();
-}
-
-void MainWindow::on_loginButton_clicked()
-{
     FTPLogin();
     ui->informationText->append("---------------------------");
     QMessageBox::information(NULL, "login", "login success\r\nmodal:主动模式(PORT)", QMessageBox::Yes);
-
-}
-
-void MainWindow::on_listButton_clicked()
-{
     list();
 }
 
