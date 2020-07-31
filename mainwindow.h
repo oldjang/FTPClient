@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -21,6 +21,7 @@
 #include <string>
 #include <QListWidgetItem>
 
+#pragma execution_character_set("utf-8")
 
 #define MAXSIZE 1024
 #define CONNECTPORT 21
@@ -93,6 +94,7 @@ private:
     bool download();//下载
     bool upload(char *srcPath);
     bool cd(QString name);
+    qint64 listfile(QFileInfo);
 
 };
 #endif // MAINWINDOW_H

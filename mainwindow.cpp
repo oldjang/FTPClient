@@ -1,9 +1,10 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QTextCodec>
 #include <QFileDialog>
 #include <wchar.h>
-#pragma execution_character_set(“utf-8”)
+
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -199,6 +200,59 @@ bool UTF8ToUnicode(const char* UTF8, wchar_t* strUnicode)
  return true;
 }
 
+qint64 MainWindow::listfile(QFileInfo fileinfo)
+{
+    int nRead;
+    char data_buf[DATA_BUFSIZE];
+
+    if(!turnToPasvMode())
+    {
+        return -1;
+    }
+
+    //构建命令报文并发送至服务器
+    if(!ftpBasic.sendCMD(socketControl,"LIST "+fileinfo.fileName()+"\r\n"))
+    {
+        ui->informationText->append("list error");
+        closesocket(socketData);
+        return -1;
+    }
+    nRead = recv(socketControl, data_buf, DATA_BUFSIZE - 1, 0);
+
+    ui->informationText->append(data_buf);
+    if(data_buf[0]=='5'&&data_buf[1]=='5'&&data_buf[2]=='0')return 0;//550 not found
+    QString tmp="";
+    memset(data_buf,0,sizeof(data_buf));
+    while (true)
+    {
+        nRead = recv(socketData, data_buf, DATA_BUFSIZE - 1, 0);
+        if (nRead == SOCKET_ERROR)
+        {
+            ui->informationText->append("list error");
+            closesocket(socketData);
+            return -1;
+        }
+
+        if (nRead == 0)//数据读取结束
+            break;
+        tmp.append(data_buf);
+    }
+    QStringList list=tmp.split(" ",QString::SkipEmptyParts);
+
+    for(int i=0;i<list.size();i++)
+    {
+        list[i]=list[i].trimmed();
+        ui->informationText->append(QString::number(i)+list[i]);
+    }
+
+
+    closesocket(socketData);
+
+
+    return list[4].toInt();
+}
+
+
 bool MainWindow::download()
 {
     if(!listMessage.contains(ui->downloadFilenamText->text(),Qt::CaseSensitive))
@@ -252,7 +306,6 @@ bool MainWindow::upload(char *srcPath)
     int count;
     FILE *fd;
     char *name;
-    QTextCodec *codec = QTextCodec::codecForName("GB2312");
     QByteArray  s=srcPath;
     QFileInfo fileinfo(s);
     if(!fileinfo.isFile())//判断文件路径是否 正确
@@ -265,7 +318,6 @@ bool MainWindow::upload(char *srcPath)
     name=ba.data();
     wchar_t strUnicode[260];
     UTF8ToUnicode(srcPath, strUnicode);
-
     fd=_wfopen(strUnicode,L"rb");
     if(fd==NULL)
     {
@@ -274,37 +326,148 @@ bool MainWindow::upload(char *srcPath)
 
         return false;
     }
-    turnToPasvMode();
-    if(!ftpBasic.sendCMD(socketControl,"STOR "+fileinfo.fileName()+"\r\n")) {
-        ui->informationText->append("send stor Request error");
+
+    if(!ftpBasic.sendCMD(socketControl,"TYPE I\r\n")) {
+        ui->informationText->append("send TYPE Request error");
         return false;
     }
-    ui->informationText->append("send STOR Request success");
+
     if(!ftpBasic.readResponse(socketControl)) {
-        ui->informationText->append("socket STOR receive error");
+        ui->informationText->append("socket TYPE receive error");
         return false;
     }
-    ui->informationText->append(Respond);
-    ui->progressBar->reset();
-    memset(buf,0,sizeof(buf));
-    qint64 sum=0;
-    qint64 tot=fileinfo.size();
-    while(true)
-    {
-        count=fread(buf,sizeof(char),256,fd);
-        if(send(socketData,buf,count,0)==SOCKET_ERROR)
-        {
-            QMessageBox::warning(NULL, "error", "数据传输出错",QMessageBox::Yes);
-            break;
-        }
-        sum+=count;
-        ui->progressBar->setValue(sum*100/fileinfo.size());
-        if(count<256)
-            break;
+
+
+
+    qint64 result=listfile(fileinfo);
+
+    if(result==-1)    {
+        QMessageBox::warning(NULL, "error", "服务器 访问出错",QMessageBox::Yes);
     }
-    fclose(fd);
-    closesocket(socketData);
-    return true;
+
+    if(result==0)//服务器内不存在该文件直接上传
+    {
+        turnToPasvMode();
+
+        if(!ftpBasic.sendCMD(socketControl,"STOR "+fileinfo.fileName()+"\r\n")) {
+            ui->informationText->append("send stor Request error");
+            return false;
+        }
+        ui->informationText->append("send STOR Request success");
+        if(!ftpBasic.readResponse(socketControl)) {
+            ui->informationText->append("socket STOR receive error");
+            return false;
+        }
+        ui->informationText->append(Respond);
+        ui->progressBar->reset();
+        memset(buf,0,sizeof(buf));
+        qint64 sum=0;
+        qint64 tot=fileinfo.size();
+        while(true)
+        {
+            count=fread(buf,sizeof(char),256,fd);
+            if(send(socketData,buf,count,0)==SOCKET_ERROR)
+            {
+                QMessageBox::warning(NULL, "error", "数据传输出错",QMessageBox::Yes);
+                break;
+            }
+            sum+=count;
+            ui->progressBar->setValue(sum*100/tot);
+            if(count<256)
+                break;
+        }
+        fclose(fd);
+        closesocket(socketData);
+        return true;
+    }
+    else
+    {
+        QMessageBox *msgbox=new QMessageBox();
+        msgbox->setWindowTitle("确认");
+        QString s="检测到服务器已存在同名文件\n本地文件大小为"+QString::number(fileinfo.size())+"\n服务器段文件大小为"+QString::number(result);;
+        msgbox->setText(s);
+        msgbox->setStandardButtons(QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        msgbox->button(QMessageBox::Yes)->setText("覆盖");
+        msgbox->button(QMessageBox::No)->setText("取消上传");
+        msgbox->button(QMessageBox::Cancel)->setText("断点重传");
+        int res=msgbox->exec();
+        if(res==QMessageBox::Yes)
+        {
+            turnToPasvMode();
+
+            if(!ftpBasic.sendCMD(socketControl,"STOR "+fileinfo.fileName()+"\r\n")) {
+                ui->informationText->append("send stor Request error");
+                return false;
+            }
+            ui->informationText->append("send STOR Request success");
+            if(!ftpBasic.readResponse(socketControl)) {
+                ui->informationText->append("socket STOR receive error");
+                return false;
+            }
+            ui->informationText->append(Respond);
+            ui->progressBar->reset();
+            memset(buf,0,sizeof(buf));
+            qint64 sum=0;
+            qint64 tot=fileinfo.size();
+            while(true)
+            {
+                count=fread(buf,sizeof(char),256,fd);
+                if(send(socketData,buf,count,0)==SOCKET_ERROR)
+                {
+                    QMessageBox::warning(NULL, "error", "数据传输出错",QMessageBox::Yes);
+                    break;
+                }
+                sum+=count;
+                ui->progressBar->setValue(sum*100/tot);
+                if(count<256)
+                    break;
+            }
+            fclose(fd);
+            closesocket(socketData);
+            return true;
+        }
+        else if(res==QMessageBox::No)
+        {
+            return false;
+        }
+        else if(res==QMessageBox::Cancel)
+        {
+            turnToPasvMode();
+
+            if(!ftpBasic.sendCMD(socketControl,"APPE "+fileinfo.fileName()+"\r\n")) {
+                ui->informationText->append("send appe Request error");
+                return false;
+            }
+            ui->informationText->append("send APPE Request success");
+            if(!ftpBasic.readResponse(socketControl)) {
+                ui->informationText->append("socket APPE receive error");
+                return false;
+            }
+            ui->informationText->append(Respond);
+            ui->progressBar->reset();
+            fseek(fd,result,SEEK_SET);
+            memset(buf,0,sizeof(buf));
+            qint64 sum=result;
+            qint64 tot=fileinfo.size();
+            while(true)
+            {
+                count=fread(buf,sizeof(char),256,fd);
+                if(send(socketData,buf,count,0)==SOCKET_ERROR)
+                {
+                    QMessageBox::warning(NULL, "error", "数据传输出错",QMessageBox::Yes);
+                    break;
+                }
+                sum+=count;
+                ui->progressBar->setValue(sum*100/tot);
+                if(count<256)
+                    break;
+            }
+            fclose(fd);
+            closesocket(socketData);
+            return true;
+        }
+    }
+
 }
 
 bool MainWindow::cd(QString name)
