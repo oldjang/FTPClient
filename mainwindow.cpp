@@ -275,45 +275,154 @@ bool MainWindow::download()
     if(ui->downloadFilenamText->text() != NULL) {
         qint64 size=listfile(ui->downloadFilenamText->text());
 
-        turnToPasvMode();
-
-        //RETR
-        if(!ftpBasic.sendCMD(socketControl,"RETR "+ui->downloadFilenamText->text()+"\r\n")) {
-            ui->informationText->append("send retr Request error");
-            return false;
-        }
-        ui->informationText->append("send RETR Request success");
-
-        if(!ftpBasic.readResponse(socketControl)) {
-            ui->informationText->append("socket RETR receive error");
-            return false;
-        }
-        ui->informationText->append(Respond);
-
-
-        char src[256];
-        wchar_t strUnicode[260];
         std::string filename=(file_path+"/"+ui->downloadFilenamText->text()).toStdString();
-        UTF8ToUnicode(filename.data(), strUnicode);
-        FILE *fd=_wfopen(strUnicode,L"wb");
-        ui->progressBar->reset();
-        int cnt;
-        qint64 sum=0;
-        while ((cnt = recv(socketData, src, 256, 0)) > 0)
+
+        QByteArray s(filename.c_str(),filename.length());
+        QFileInfo fileinfo(s);
+
+        qint64 result=listfile(fileinfo.fileName());
+
+        std::cout<<result;
+
+
+        if(result == -1)
         {
-            fwrite(src, sizeof(char), 256, fd);
-            sum+=cnt;
-            ui->progressBar->setValue(sum*100/size);
+            QMessageBox::warning(NULL, "error", "文件夹 访问出错",QMessageBox::Yes);
+            return false;
         }
-        QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
-        closesocket(socketData);
+
+        else if(result == 0 )
+        {
+            turnToPasvMode();
+
+            //RETR
+            if(!ftpBasic.sendCMD(socketControl,"RETR "+ui->downloadFilenamText->text()+"\r\n")) {
+                ui->informationText->append("send retr Request error");
+                return false;
+            }
+            ui->informationText->append("send RETR Request success");
+
+            if(!ftpBasic.readResponse(socketControl)) {
+                ui->informationText->append("socket RETR receive error");
+                return false;
+            }
+            ui->informationText->append(Respond);
+
+            char src[256];
+            wchar_t strUnicode[260];
+            UTF8ToUnicode(filename.data(), strUnicode);
+            FILE *fd=_wfopen(strUnicode,L"wb");
+
+            ui->progressBar->reset();
+            int cnt;
+            qint64 sum=0;
+            while ((cnt = recv(socketData, src, 256, 0)) > 0)
+            {
+                fwrite(src, sizeof(char), 256, fd);
+                sum+=cnt;
+                ui->progressBar->setValue(sum*100/size);
+            }
+            QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
+            closesocket(socketData);
+            return true;
+        }
+
+        else
+        {
+            QMessageBox *msgbox=new QMessageBox();
+            msgbox->setWindowTitle("确认");
+            QString s="检测到文件夹已存在同名文件\n本地文件大小为"+QString::number(fileinfo.size())+"\n文件夹段文件大小为"+QString::number(result);;
+            msgbox->setText(s);
+            msgbox->setStandardButtons(QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+            msgbox->button(QMessageBox::Yes)->setText("覆盖");
+            msgbox->button(QMessageBox::No)->setText("取消下载");
+            msgbox->button(QMessageBox::Cancel)->setText("断点重传");
+            int res=msgbox->exec();
+            if(res == QMessageBox::Yes)
+            {
+                turnToPasvMode();
+
+                //RETR
+                if(!ftpBasic.sendCMD(socketControl,"RETR "+ui->downloadFilenamText->text()+"\r\n")) {
+                    ui->informationText->append("send retr Request error");
+                    return false;
+                }
+                ui->informationText->append("send RETR Request success");
+
+                if(!ftpBasic.readResponse(socketControl)) {
+                    ui->informationText->append("socket RETR receive error");
+                    return false;
+                }
+                ui->informationText->append(Respond);
+
+                char src[256];
+                wchar_t strUnicode[260];
+                UTF8ToUnicode(filename.data(), strUnicode);
+                FILE *fd=_wfopen(strUnicode,L"wb");
+
+                ui->progressBar->reset();
+                int cnt;
+                qint64 sum=0;
+                while ((cnt = recv(socketData, src, 256, 0)) > 0)
+                {
+                    fwrite(src, sizeof(char), 256, fd);
+                    sum+=cnt;
+                    ui->progressBar->setValue(sum*100/size);
+                }
+                QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
+                closesocket(socketData);
+                return true;
+            }
+
+            else if(res == QMessageBox::No) {
+                return false;
+            }
+
+            else
+            {
+                turnToPasvMode();
+
+                //RETR
+                if(!ftpBasic.sendCMD(socketControl,"APPE "+ui->downloadFilenamText->text()+"\r\n")) {
+                    ui->informationText->append("send appe Request error");
+                    return false;
+                }
+                ui->informationText->append("send APPE Request success");
+
+                if(!ftpBasic.readResponse(socketControl)) {
+                    ui->informationText->append("socket APPE receive error");
+                    return false;
+                }
+                ui->informationText->append(Respond);
+
+                char src[256];
+                wchar_t strUnicode[260];
+                UTF8ToUnicode(filename.data(), strUnicode);
+                FILE *fd=_wfopen(strUnicode,L"wb");
+
+                ui->progressBar->reset();
+                fseek(fd,result,SEEK_SET);
+                int cnt;
+                qint64 sum=result;
+                while ((cnt = recv(socketData, src, 256, 0)) > 0)
+                {
+                    fwrite(src, sizeof(char), 256, fd);
+                    sum+=cnt;
+                    ui->progressBar->setValue(sum*100/size);
+                }
+                QMessageBox::information(NULL, "success", "file success", QMessageBox::Yes);
+                closesocket(socketData);
+                return true;
+            }
+        }
+
         //file.close();
 
     }
     else {
         QMessageBox::warning(NULL, "error", "请输入文件名",QMessageBox::Yes);
+        return false;
     }
-    return true;
 }
 
 
@@ -360,9 +469,10 @@ bool MainWindow::upload(char *srcPath)
 
     if(result==-1)    {
         QMessageBox::warning(NULL, "error", "服务器 访问出错",QMessageBox::Yes);
+        return false;
     }
 
-    if(result==0)//服务器内不存在该文件直接上传
+    else if(result==0)//服务器内不存在该文件直接上传
     {
         turnToPasvMode();
 
@@ -528,7 +638,10 @@ void MainWindow::on_quitButton_clicked()
 
 void MainWindow::on_downloadButton_clicked()
 {
-    download();
+    if(download()==true) {
+        ui->informationText->append("download complete");
+    }
+    ui->progressBar->reset();
 }
 
 void MainWindow::on_fileChooseButton_clicked()
